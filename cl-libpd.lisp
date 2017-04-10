@@ -17,6 +17,7 @@
 (defcfun ("libpd_clear_search_path" libpd-clear-search-path) :void)
 (defcfun ("libpd_add_to_search_path" libpd-add-to-search-path) :void (sym :string))
 
+;;imported functions
 (defcfun ("libpd_openfile" libpd-openfile) (:pointer :void)
   (basename :string) (dirname :string))
 (defcfun ("libpd_closefile" libpd-closefile) :void
@@ -51,3 +52,31 @@
   (recv :string) (x :float))
 (defcfun ("libpd_symbol" libpd-symbol) :int
   (recv :string) (sym :string))
+
+(defcfun ("libpd_start_message" libpd-start-message) :int
+  (max_length :int))
+(defcfun ("libpd_add_float" libpd-add-float) :void
+  (x :float))
+(defcfun ("libpd_add_symbol" libpd-add-symbol) :void
+  (sym :string))
+(defcfun ("libpd_finish_list" libpd-finish-list) :int
+  (recv :string))
+(defcfun ("libpd_finish_message" libpd-finish-message) :int
+  (recv :string) (msg :string))
+
+;;helper functions
+(defun libpd-process-args (mylist)
+  (if (not (equal (libpd-start-message (length mylist)) 0)) -2
+      (dolist (x mylist)
+	 (cond ((floatp x) (libpd-add-float x))
+	       ((stringp x) (libpd-add-symbol x))))))
+
+;;emulated functions
+(defun libpd-message (recv msg mylist)
+  (if (listp mylist) (or (libpd-process-args mylist)
+			 (libpd-finish-message recv msg))))
+
+(defun libpd-list (recv mylist)
+  (if (listp mylist)
+      (or (libpd-process-args mylist)
+	  (libpd-finish-list recv))))
